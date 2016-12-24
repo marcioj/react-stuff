@@ -39,3 +39,7 @@ let App = React.createClass({
 
 invokeLater(<App/>);
 ```
+
+# TODO
+
+BUG: Right now when editing the JTextField value the document listener event is triggering recursively

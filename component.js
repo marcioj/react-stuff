@@ -1,9 +1,33 @@
 var ReactMultiChild = require('react/lib/ReactMultiChild');
+var EventListener = require('./eventListener');
+
+// TODO remove this
+function inspect(obj) {
+  var str = '';
+  for (var key in obj) {
+    str += key + ': ' + obj[key] + ',\n';
+  }
+  str = '{ ' + str + ' }';
+  print(str);
+}
+
+function updateNativeComponent(nativeComponent, props, update) {
+  for (var key in props) {
+    if (key === 'children') { continue; }
+    var value = props[key];
+    if (EventListener.isEventName(key)) {
+      EventListener.add(nativeComponent, key, value);
+    } else {
+      var setter = 'set' + key.charAt(0).toUpperCase() + key.slice(1);
+      nativeComponent[setter](value);
+    }
+  }
+}
 
 function ReactJavaBaseComponent(viewConfig) {
   this.viewConfig = viewConfig;
   if (!this.viewConfig.setupNativeComponent) {
-    this.viewConfig.setupNativeComponent = () => {};
+    this.viewConfig.setupNativeComponent = () => { };
   }
   print("constructor")
 };
@@ -14,7 +38,9 @@ ReactJavaBaseComponent.prototype = Object.assign(
     // these are the required methods to implement. You may additionally provide
     // custom implementations of other lifecycle methods or any arbitrary
     // methods that are private to your implementation.
-    getPublicInstance() {},
+    getPublicInstance() {
+      return this._nativeComponent;
+    },
     mountComponent(transaction, nativeParent, nativeContainerInfo, context) {
       print("mountComponent")
 
@@ -30,18 +56,7 @@ ReactJavaBaseComponent.prototype = Object.assign(
       // each property and value is applied as a setter
       // so <Foo message="hello" /> will call this._nativeComponent.setMessage("hello")
       var props = this._currentElement.props;
-      for(var key in props) {
-        if (key === 'children') { continue; }
-        var value = props[key];
-        if (key === 'onclick') {
-          this._nativeComponent.addMouseListener(new java.awt.event.MouseAdapter({
-            mouseClicked: value
-          }));
-        } else {
-          var setter = 'set' + key.charAt(0).toUpperCase() + key.slice(1);
-          this._nativeComponent[setter](value);
-        }
-      }
+      updateNativeComponent(this._nativeComponent, props);
 
       this.viewConfig.setupNativeComponent.call(null, this._nativeComponent);
 
@@ -49,17 +64,22 @@ ReactJavaBaseComponent.prototype = Object.assign(
 
       return this._nativeComponent;
     },
-    initializeChildren: function(children, containerTag, transaction, context) {
+    initializeChildren: function (children, containerTag, transaction, context) {
       var mountImages = this.mountChildren(this._currentElement.props.children, transaction, context);
-      for(var i = 0; i < mountImages.length; i++) {
+      for (var i = 0; i < mountImages.length; i++) {
         var image = mountImages[i];
         containerTag.add(image);
       }
     },
     receiveComponent(nextElement, transaction, context) {
-      print("receiveComponent")
+      //print("receiveComponent")
       var prevElement = this._currentElement;
       this._currentElement = nextElement;
+
+      // TODO diff props
+      javax.swing.SwingUtilities.invokeLater(() => {
+        updateNativeComponent(this._nativeComponent, nextElement.props);
+      });
 
       // this.updateChildren comes from ReactMultiChild.Mixin
       this.updateChildren(nextElement.props.children, transaction, context);
@@ -70,8 +90,8 @@ ReactJavaBaseComponent.prototype = Object.assign(
     // implement both of these for now. React <= 15.0 uses getNativeNode, but
     // that is confusing. Host environment is more accurate and will be used
     // going forward
-    getNativeNode() {},
-    getHostNode() {}
+    getNativeNode() { },
+    getHostNode() { }
   },
   ReactMultiChild.Mixin
 );

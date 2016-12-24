@@ -24,22 +24,29 @@ var JButton = createJavaComponentClass({
   javaClass: javax.swing.JButton
 });
 
+var JTextField = createJavaComponentClass({
+  javaClass: javax.swing.JTextField
+});
+
+function alert(msg) {
+  javax.swing.JOptionPane.showMessageDialog(null, msg);
+}
+
 var App = React.createClass({
   getInitialState() {
     return {
-      msg1: 'Hello',
-      msg2: 'world'
+      msg: 'Hello',
     };
   },
-  showDialog(msg) {
-    javax.swing.JOptionPane.showMessageDialog(null, 'you clicked in ' + msg);
+  updateText() {
+    this.setState({ msg: this.refs.textField.text });
   },
   render() {
     return (
       <JFrame>
-        <JLabel text={this.state.msg1} onclick={this.showDialog.bind(null, this.state.msg1)} />
-        <JLabel text={this.state.msg2} onclick={this.showDialog.bind(null, this.state.msg2)} />
-        <JButton text={this.state.msg2} />
+        <JLabel text={this.state.msg} />
+        <JTextField text={this.state.msg} ref="textField" onChange={this.updateText.bind(this)} />
+        <JButton text={this.state.msg} />
       </JFrame>
     )
   }
